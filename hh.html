@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mr. Faragalla's Key Adventure</title>
+    <style>
+        :root {
+            --dynamic-color: #d32f2f; /* This will change via JavaScript */
+            --success: #4caf50;
+            --bg: #f4f7f6;
+            --text-main: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        #app-container {
+            background: white;
+            width: 95%;
+            max-width: 700px;
+            padding: 40px 30px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            text-align: center;
+            border-top: 10px solid var(--dynamic-color);
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.5s ease;
+        }
+
+        h1 { color: var(--dynamic-color); margin-bottom: 10px; font-size: 28px; transition: color 0.5s ease; }
+        .section-title { color: var(--dynamic-color); font-size: 20px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; transition: color 0.5s ease; }
+        p.subtitle { color: #666; font-size: 16px; margin-bottom: 30px; }
+
+        .screen { display: none; animation: fadeIn 0.5s ease; }
+        .screen.active { display: block; }
+
+        input[type="text"] {
+            width: 80%; padding: 15px; font-size: 18px; border: 2px solid #ddd;
+            border-radius: 10px; margin-bottom: 20px; text-align: center; transition: 0.3s;
+        }
+        input[type="text"]:focus, textarea:focus { border-color: var(--dynamic-color); outline: none; }
+
+        textarea {
+            width: 90%; height: 150px; padding: 15px; font-size: 16px; border: 2px solid #ddd;
+            border-radius: 10px; margin-bottom: 10px; resize: none; font-family: inherit;
+        }
+
+        .btn {
+            background: var(--dynamic-color); color: white; border: none; padding: 15px 30px;
+            font-size: 18px; border-radius: 10px; cursor: pointer; transition: all 0.3s ease;
+            width: 85%; margin: 10px auto; display: block; font-weight: bold;
+        }
+        .btn:hover { opacity: 0.8; transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .btn:disabled { background: #ccc; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .btn-audio { margin-bottom: 20px; }
+
+        .option-btn {
+            background: #f8f9fa; color: var(--text-main); border: 2px solid #e0e0e0;
+            text-align: left; padding: 15px 20px; width: 90%;
+        }
+        .option-btn:hover { background: #e3f2fd; border-color: var(--dynamic-color); }
+
+        .sign-box, .passage-box {
+            background: #fff9c4; border: 2px dashed var(--dynamic-color); padding: 20px;
+            margin: 20px auto; font-size: 1.1em; border-radius: 10px; width: 85%;
+            transition: border-color 0.5s ease;
+        }
+        
+        .passage-box { background: #f0f4f8; text-align: left; font-size: 1em; line-height: 1.6; }
+
+        .question-text { font-size: 1.2em; margin-bottom: 20px; font-weight: 600; padding: 0 20px; }
+        
+        #feedback-box { margin-top: 20px; font-size: 1.3em; font-weight: bold; min-height: 35px; }
+        .progress-text { font-size: 0.9em; color: #888; margin-bottom: 5px; font-weight: bold; }
+        .score-display { font-size: 48px; color: var(--dynamic-color); margin: 20px 0; font-weight: bold; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    
+    <div id="welcome-screen" class="screen active">
+        <h1>Mr. Faragalla's Key Adventure</h1>
+        <p class="subtitle">Complete A2 English Test: Reading, Listening & Writing</p>
+        <p>Are you ready to show your English skills?</p>
+        <input type="text" id="student-name" placeholder="Type your full name here..." autocomplete="off">
+        <button class="btn" onclick="startAdventure()">Start The Test</button>
+    </div>
+
+    <div id="quiz-screen" class="screen">
+        <div class="progress-text" id="section-indicator">Section: Reading</div>
+        <div class="progress-text" id="progress-indicator">Question 1 of X</div>
+        <h2 class="section-title" id="section-title">Part 1: Reading & Vocabulary</h2>
+        
+        <div id="audio-container" style="display: none;">
+            <p style="color: #666; margin-bottom: 10px;">Click the button to listen to the audio track. You can play it twice.</p>
+            <button class="btn btn-audio" id="play-audio-btn" onclick="playAudio()">🔊 Play Audio Track</button>
+            <p id="play-count" style="font-size: 0.9em; font-weight: bold; margin-top: 0;">Plays remaining: 2</p>
+        </div>
+
+        <div id="sign-container" class="sign-box" style="display: none;"></div>
+        <div id="passage-container" class="passage-box" style="display: none;"></div>
+        
+        <div id="question-text" class="question-text"></div>
+        
+        <div id="options-container"></div>
+
+        <div id="writing-container" style="display: none;">
+            <p style="text-align: left; padding: 0 5%;"><strong>Read this email from your English friend, Sam:</strong><br><br>
+            <em>"I love sports! Tell me about a sport you play or watch. What is it? When do you play or watch it? Why do you like it?"</em><br><br>
+            <strong>Write an email to Sam and answer the questions. (25 - 35 words)</strong></p>
+            <textarea id="writing-area" placeholder="Write your email here..." oninput="updateWordCount()"></textarea>
+            <p style="text-align: right; width: 90%; margin: 0 auto; color: #666;" id="word-count">Words: 0</p>
+            <button class="btn" onclick="submitWriting()">Submit Writing</button>
+        </div>
+
+        <div id="feedback-box"></div>
+    </div>
+
+    <div id="result-screen" class="screen">
+        <h1>Test Complete!</h1>
+        <p class="subtitle" id="final-message"></p>
+        <div class="score-display" id="final-score"></div>
+        <p style="color: #1976d2; font-weight: bold;">Note: Your writing section will be graded later by Mr. Faragalla.</p>
+        <p>Excellent effort today. You can now close this window.</p>
+    </div>
+
+</div>
+
+<script>
+    let studentName = "";
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let isAnswering = false;
+    let audioPlaysLeft = 2;
+
+    // Colour palette for dynamic page changes
+    const colors = [
+        "#d32f2f", "#1976d2", "#2e7d32", "#f57c00", "#7b1fa2", 
+        "#0097a7", "#c2185b", "#689f38", "#e64a19", "#455a64"
+    ];
+
+    const positivePraises = [
+        "Fantastic job", "You're a star", "Brilliant", "Excellent work", 
+        "Spot on", "Super smart", "Way to go", "Awesome"
+    ];
+
+    // The Complete Test Data (24 Multiple Choice + 1 Writing)
+    const testSections = [
+        // --- ORIGINAL READING (3) + 10 NEW READING = 13 Reading Questions ---
+        { section: "Reading", title: "Part 1: Signs", type: "sign", signText: "BAHRAIN NATIONAL STADIUM<br>Show your ticket at the gate.", question: "What does this sign tell you to do?", options: ["A) You must buy a ticket inside.", "B) You need a ticket to enter.", "C) You can leave your ticket at home."], correct: 1 },
+        { section: "Reading", title: "Part 1: Signs", type: "sign", signText: "ZOO RULES<br>Please do not feed the animals.", question: "What does this sign mean?", options: ["A) You can buy animal food here.", "B) The animals are not hungry.", "C) You must not give food to the animals."], correct: 2 },
+        { section: "Reading", title: "Part 1: Signs", type: "sign", signText: "LIBRARY<br>Quiet please. Exam in progress.", question: "What does this sign mean?", options: ["A) You can talk loudly here.", "B) You must not make noise here.", "C) You can take an exam tomorrow."], correct: 1 },
+        { section: "Reading", title: "Part 1: Vocabulary", type: "text", question: "Ali was very tired after the match, so he ________ a long sleep.", options: ["A) made", "B) did", "C) had"], correct: 2 },
+        { section: "Reading", title: "Part 1: Vocabulary", type: "text", question: "My sister usually ________ to school by bus.", options: ["A) going", "B) goes", "C) go"], correct: 1 },
+        { section: "Reading", title: "Part 1: Vocabulary", type: "text", question: "It is very cold outside, so you should wear a ________.", options: ["A) jacket", "B) T-shirt", "C) shorts"], correct: 0 },
+        { section: "Reading", title: "Part 1: Vocabulary", type: "text", question: "I am very ________ today because I passed my math test!", options: ["A) angry", "B) sad", "C) happy"], correct: 2 },
+        { section: "Reading", title: "Part 1: Vocabulary", type: "text", question: "Can you ________ me with my homework, please?", options: ["A) help", "B) make", "C) play"], correct: 0 },
+        { section: "Reading", title: "Part 2: Conversations", type: "text", question: "Are you going to football practice today?", options: ["A) Yes, at 5 o'clock.", "B) It was a great game.", "C) No, I didn't see him."], correct: 0 },
+        { section: "Reading", title: "Part 2: Conversations", type: "text", question: "What time does the movie start?", options: ["A) In the cinema.", "B) At 7:00 PM.", "C) It is an action movie."], correct: 1 },
+        { section: "Reading", title: "Part 2: Conversations", type: "text", question: "Would you like some water?", options: ["A) Yes, please.", "B) I like water.", "C) It is raining."], correct: 0 },
+        { section: "Reading", title: "Part 2: Conversations", type: "text", question: "Where did you buy that shirt?", options: ["A) It is blue.", "B) Yesterday afternoon.", "C) At the new mall in Manama."], correct: 2 },
+        { section: "Reading", title: "Part 2: Conversations", type: "text", question: "I lost my pen. Can I borrow yours?", options: ["A) No, I don't have one.", "B) It is a blue pen.", "C) Yes, of course. Here you are."], correct: 2 },
+
+        // --- NEW READING PASSAGE (5 Questions) ---
+        { section: "Reading", title: "Part 3: Read the Story", type: "passage", passage: "Last week, Ahmed went to the stadium with his father. They watched their favourite team, Al Ahly, play against a strong team from another city. The match started at 6:00 PM. In the first half, the other team scored a goal. Ahmed was sad. But in the second half, Al Ahlys played very well and scored two goals! The final score was 2-1. After the game, Ahmed and his dad ate dinner at a restaurant.", question: "Who did Ahmed go to the stadium with?", options: ["A) His brother", "B) His father", "C) His friends"], correct: 1 },
+        { section: "Reading", title: "Part 3: Read the Story", type: "passage", passage: "Last week, Ahmed went to the stadium with his father. They watched their favourite team, Al Ahly, play against a strong team from another city. The match started at 6:00 PM. In the first half, the other team scored a goal. Ahmed was sad. But in the second half, Al Ahlys played very well and scored two goals! The final score was 2-1. After the game, Ahmed and his dad ate dinner at a restaurant.", question: "What time did the football match start?", options: ["A) 2:00 PM", "B) 6:00 PM", "C) 8:00 PM"], correct: 1 },
+        { section: "Reading", title: "Part 3: Read the Story", type: "passage", passage: "Last week, Ahmed went to the stadium with his father. They watched their favourite team, Al Ahly, play against a strong team from another city. The match started at 6:00 PM. In the first half, the other team scored a goal. Ahmed was sad. But in the second half, Al Ahlys played very well and scored two goals! The final score was 2-1. After the game, Ahmed and his dad ate dinner at a restaurant.", question: "Who scored the first goal of the game?", options: ["A) Ahmed", "B) Al Ahlys", "C) The other team"], correct: 2 },
+        { section: "Reading", title: "Part 3: Read the Story", type: "passage", passage: "Last week, Ahmed went to the stadium with his father. They watched their favourite team, Al Ahly, play against a strong team from another city. The match started at 6:00 PM. In the first half, the other team scored a goal. Ahmed was sad. But in the second half, Al Ahlys played very well and scored two goals! The final score was 2-1. After the game, Ahmed and his dad ate dinner at a restaurant.", question: "How many goals did Al Ahlys score?", options: ["A) One", "B) Two", "C) Three"], correct: 1 },
+        { section: "Reading", title: "Part 3: Read the Story", type: "passage", passage: "Last week, Ahmed went to the stadium with his father. They watched their favourite team, Al Ahly, play against a strong team from another city. The match started at 6:00 PM. In the first half, the other team scored a goal. Ahmed was sad. But in the second half, Al Ahlys played very well and scored two goals! The final score was 2-1. After the game, Ahmed and his dad ate dinner at a restaurant.", question: "What did they do after the match?", options: ["A) Went to sleep", "B) Played football", "C) Ate dinner"], correct: 2 },
+
+        // --- ORIGINAL LISTENING (2) + 5 NEW LISTENING = 7 Listening Questions ---
+        { section: "Listening", title: "Part 4: Listen and Answer", type: "listening", audioText: "Hello students. This is your sports coach. Please listen carefully. Football training this week will be on Thursday, not Wednesday. Training starts at 4:30 PM. Don't forget to bring your own water bottles, because it will be very hot. See you on Thursday!", question: "What day is the football training this week?", options: ["A) Wednesday", "B) Thursday", "C) Friday"], correct: 1 },
+        { section: "Listening", title: "Part 4: Listen and Answer", type: "listening", audioText: "Hello students. This is your sports coach. Please listen carefully. Football training this week will be on Thursday, not Wednesday. Training starts at 4:30 PM. Don't forget to bring your own water bottles, because it will be very hot. See you on Thursday!", question: "What does the coach want the students to bring?", options: ["A) A football", "B) A red shirt", "C) A water bottle"], correct: 2 },
+        
+        { section: "Listening", title: "Part 5: Listen and Answer", type: "listening", audioText: "Hi, this is Sarah. I am calling to invite you to my birthday party on Saturday at 4 PM. We will have cake and play games. My house is next to the big park. I hope you can come!", question: "What day is Sarah's birthday party?", options: ["A) Friday", "B) Saturday", "C) Sunday"], correct: 1 },
+        { section: "Listening", title: "Part 5: Listen and Answer", type: "listening", audioText: "Hi, this is Sarah. I am calling to invite you to my birthday party on Saturday at 4 PM. We will have cake and play games. My house is next to the big park. I hope you can come!", question: "What time does the party start?", options: ["A) 2:00 PM", "B) 3:00 PM", "C) 4:00 PM"], correct: 2 },
+        { section: "Listening", title: "Part 5: Listen and Answer", type: "listening", audioText: "Hi, this is Sarah. I am calling to invite you to my birthday party on Saturday at 4 PM. We will have cake and play games. My house is next to the big park. I hope you can come!", question: "Where is Sarah's house?", options: ["A) Next to the school", "B) Next to the big park", "C) Next to the cinema"], correct: 1 },
+        
+        { section: "Listening", title: "Part 6: Listen and Answer", type: "listening", audioText: "Attention passengers. The train to Manama will leave from Platform 3 in ten minutes. Please have your tickets ready to show the staff.", question: "Where is the train going?", options: ["A) Manama", "B) Muharraq", "C) Riffa"], correct: 0 },
+        { section: "Listening", title: "Part 6: Listen and Answer", type: "listening", audioText: "Attention passengers. The train to Manama will leave from Platform 3 in ten minutes. Please have your tickets ready to show the staff.", question: "Which platform will the train leave from?", options: ["A) Platform 1", "B) Platform 2", "C) Platform 3"], correct: 2 },
+
+        // --- WRITING (1) ---
+        { section: "Writing", title: "Part 7: Short Email", type: "writing" }
+    ];
+
+    function startAdventure() {
+        const nameInput = document.getElementById("student-name").value.trim();
+        if (nameInput === "") {
+            alert("Please write your name before starting!");
+            return;
+        }
+        studentName = nameInput;
+        document.getElementById("welcome-screen").classList.remove("active");
+        document.getElementById("quiz-screen").classList.add("active");
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        isAnswering = false;
+        const q = testSections[currentQuestionIndex];
+        
+        // Update Dynamic Color Theme
+        const newColor = colors[currentQuestionIndex % colors.length];
+        document.documentElement.style.setProperty('--dynamic-color', newColor);
+        document.getElementById("play-count").style.color = newColor;
+
+        // Update Headers
+        document.getElementById("section-indicator").innerText = `Section: ${q.section}`;
+        document.getElementById("progress-indicator").innerText = `Task ${currentQuestionIndex + 1} of ${testSections.length}`;
+        document.getElementById("section-title").innerText = q.title;
+        document.getElementById("feedback-box").innerHTML = "";
+
+        // Hide containers first
+        document.getElementById("sign-container").style.display = "none";
+        document.getElementById("passage-container").style.display = "none";
+        document.getElementById("audio-container").style.display = "none";
+        document.getElementById("options-container").style.display = "none";
+        document.getElementById("writing-container").style.display = "none";
+        document.getElementById("question-text").style.display = "none";
+
+        if (q.type === "writing") {
+            document.getElementById("writing-container").style.display = "block";
+            return; 
+        }
+
+        document.getElementById("question-text").style.display = "block";
+        document.getElementById("question-text").innerHTML = q.question;
+        
+        if (q.type === "sign") {
+            const signContainer = document.getElementById("sign-container");
+            signContainer.style.display = "block";
+            signContainer.innerHTML = q.signText;
+        }
+
+        if (q.type === "passage") {
+            const passageContainer = document.getElementById("passage-container");
+            passageContainer.style.display = "block";
+            passageContainer.innerHTML = "<strong>Read the text:</strong><br><br>" + q.passage;
+        }
+
+        if (q.type === "listening") {
+            document.getElementById("audio-container").style.display = "block";
+            audioPlaysLeft = 2; // Reset play count for each listening question
+            updateAudioButton();
+        }
+
+        // Render Options
+        const optionsContainer = document.getElementById("options-container");
+        optionsContainer.style.display = "block";
+        optionsContainer.innerHTML = "";
+        
+        q.options.forEach((opt, index) => {
+            const btn = document.createElement("button");
+            btn.className = "btn option-btn";
+            btn.innerHTML = opt;
+            btn.onclick = () => checkAnswer(index, btn);
+            optionsContainer.appendChild(btn);
+        });
+    }
+
+    function playAudio() {
+        if (audioPlaysLeft <= 0) return;
+        let textToRead = testSections[currentQuestionIndex].audioText;
+        const speech = new SpeechSynthesisUtterance(textToRead);
+        speech.lang = 'en-GB'; 
+        speech.rate = 0.9; 
+        window.speechSynthesis.speak(speech);
+        audioPlaysLeft--;
+        updateAudioButton();
+    }
+
+    function updateAudioButton() {
+        const btn = document.getElementById("play-audio-btn");
+        document.getElementById("play-count").innerText = `Plays remaining: ${audioPlaysLeft}`;
+        if (audioPlaysLeft === 0) {
+            btn.disabled = true;
+            btn.innerText = "Audio limit reached";
+        } else {
+            btn.disabled = false;
+            btn.innerText = "🔊 Play Audio Track";
+        }
+    }
+
+    function checkAnswer(selectedIndex, btnElement) {
+        if (isAnswering) return;
+        isAnswering = true;
+        const q = testSections[currentQuestionIndex];
+        const feedbackBox = document.getElementById("feedback-box");
+        const praise = positivePraises[Math.floor(Math.random() * positivePraises.length)];
+        window.speechSynthesis.cancel();
+
+        if (selectedIndex === q.correct) {
+            score++;
+            btnElement.style.backgroundColor = "var(--success)";
+            btnElement.style.color = "white";
+            btnElement.style.borderColor = "var(--success)";
+            feedbackBox.style.color = "var(--success)";
+            feedbackBox.innerText = `✅ ${praise}, ${studentName}!`;
+        } else {
+            btnElement.style.backgroundColor = "#e53935";
+            btnElement.style.color = "white";
+            btnElement.style.borderColor = "#e53935";
+            feedbackBox.style.color = "#c62828";
+            feedbackBox.innerText = `❌ Not quite, ${studentName}. The correct answer is highlighted.`;
+            
+            const allBtns = document.querySelectorAll(".option-btn");
+            allBtns[q.correct].style.backgroundColor = "var(--success)";
+            allBtns[q.correct].style.color = "white";
+            allBtns[q.correct].style.borderColor = "var(--success)";
+        }
+
+        setTimeout(() => {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < testSections.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }, 2500);
+    }
+
+    function updateWordCount() {
+        const text = document.getElementById("writing-area").value.trim();
+        const words = text === "" ? 0 : text.split(/\s+/).length;
+        document.getElementById("word-count").innerText = `Words: ${words}`;
+        
+        if(words >= 25 && words <= 35) {
+            document.getElementById("word-count").style.color = "var(--success)";
+            document.getElementById("word-count").style.fontWeight = "bold";
+        } else {
+            document.getElementById("word-count").style.color = "#666";
+            document.getElementById("word-count").style.fontWeight = "normal";
+        }
+    }
+
+    function submitWriting() {
+        const text = document.getElementById("writing-area").value.trim();
+        const words = text === "" ? 0 : text.split(/\s+/).length;
+        
+        if(words < 10) {
+            alert("Please write a little more before submitting!");
+            return;
+        }
+
+        const feedbackBox = document.getElementById("feedback-box");
+        feedbackBox.style.color = "var(--success)";
+        feedbackBox.innerText = `✅ Excellent writing, ${studentName}! Submitting to Mr. Faragalla...`;
+        document.querySelector("#writing-container .btn").style.display = "none";
+
+        setTimeout(() => {
+            showResults();
+        }, 2000);
+    }
+
+    function showResults() {
+        document.getElementById("quiz-screen").classList.remove("active");
+        document.getElementById("result-screen").classList.add("active");
+        document.documentElement.style.setProperty('--dynamic-color', '#4caf50'); // Green finish
+        document.getElementById("final-message").innerText = `You did a great job today, ${studentName}!`;
+        // Score out of 25 (since the 26th section is writing)
+        document.getElementById("final-score").innerText = `Reading & Listening: ${score} / 25`;
+    }
+</script>
+
+</body>
+</html>
